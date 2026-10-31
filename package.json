@@ -1,0 +1,14 @@
+{
+  "name": "sleep-optimizer-app",
+  "version": "1.0.0",
+  "description": "Adaptiver Schlaf-Tracker und Planer für Babys & Kleinkinder",
+  "main": "www/index.html",
+  "scripts": {
+    "build": "echo 'Static build ready in www/'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}

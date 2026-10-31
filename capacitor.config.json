@@ -1,0 +1,6 @@
+{
+  "appId": "com.custom.sleepoptimizer",
+  "appName": "SchlafPlaner",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

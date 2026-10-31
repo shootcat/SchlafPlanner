@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SchlafPlaner</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-light: #334155;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.2);
+      --amber: #f59e0b;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 90px; overflow-x: hidden; }
+    header { padding: 18px 20px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .header-title { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 0.75rem; background: var(--accent-soft); color: #818cf8; padding: 4px 10px; border-radius: 99px; font-weight: 600; }
+    .container { padding: 16px; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--card); border-radius: 18px; padding: 18px; box-shadow: 0 8px 25px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); }
+    .card-header { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 12px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .sweetspot-box { text-align: center; padding: 14px 0; }
+    .sweetspot-time { font-size: 2.7rem; font-weight: 800; color: var(--text); letter-spacing: -1px; margin: 4px 0; }
+    .sweetspot-sub { font-size: 0.95rem; color: var(--amber); font-weight: 600; }
+    .pressure-bar-bg { height: 10px; background: var(--card-light); border-radius: 99px; overflow: hidden; margin: 14px 0 6px 0; }
+    .pressure-bar-fill { height: 100%; background: linear-gradient(90deg, var(--emerald), var(--amber), var(--rose)); width: 50%; transition: width 0.4s ease; }
+    .pressure-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+    .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 1.05rem; font-weight: 700; color: white; background: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); transition: transform 0.1s; }
+    .btn-main:active { transform: scale(0.98); }
+    .btn-main.sleeping { background: var(--amber); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); color: #0f172a; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .btn-sec { padding: 11px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-light); color: var(--text); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .timeline { display: flex; flex-direction: column; gap: 10px; }
+    .tl-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border-left: 4px solid var(--accent); }
+    .tl-item.done { border-left-color: var(--emerald); opacity: 0.85; }
+    .tl-item.warn { border-left-color: var(--amber); }
+    .tl-item.bed { border-left-color: #a855f7; }
+    .tl-time { font-weight: 700; font-size: 0.95rem; min-width: 95px; }
+    .tl-desc { font-size: 0.9rem; flex: 1; }
+    .tl-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: var(--bg); color: var(--text); font-size: 0.95rem; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+    .stat-box { background: rgba(255,255,255,0.03); padding: 10px 6px; border-radius: 12px; }
+    .stat-val { font-size: 1.15rem; font-weight: 700; color: #818cf8; }
+    .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+    nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 16px 0; border-top: 1px solid rgba(255,255,255,0.08); z-index: 20; }
+    .nav-btn { background: none; border: none; color: var(--muted); font-size: 0.75rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+    .nav-btn.active { color: var(--accent); }
+    .tab-view { display: none; }
+    .tab-view.active { display: flex; flex-direction: column; gap: 16px; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+    .modal.open { display: flex; }
+    .modal-content { background: var(--card); border-radius: 18px; padding: 20px; width: 100%; max-width: 380px; }
+    .pill-select { display: flex; gap: 8px; margin: 10px 0; }
+    .pill { flex: 1; padding: 10px 6px; text-align: center; background: var(--bg); border-radius: 10px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
+    .pill.selected { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🌙 <span id="childNameHeader">Malia</span>s SchlafPlaner</div>
+  <div class="badge" id="ageBadge">11 Mon. • 2 Naps</div>
+</header>
+
+<div class="container">
+
+  <!-- TAB 1: DASHBOARD & PLAN -->
+  <div id="tab-plan" class="tab-view active">
+    <div class="card">
+      <div class="card-header">
+        <span>Nächster SweetSpot</span>
+        <span id="currentStateLabel">Wach</span>
+      </div>
+      <div class="sweetspot-box">
+        <div class="sweetspot-time" id="sweetspotClock">10:15</div>
+        <div class="sweetspot-sub" id="sweetspotCountdown">in 45 Minuten</div>
+      </div>
+      <div class="pressure-bar-bg">
+        <div class="pressure-bar-fill" id="pressureBar"></div>
+      </div>
+      <div class="pressure-labels">
+        <span>Schlafdruck (Prozess S)</span>
+        <span id="pressurePercent">68%</span>
+      </div>
+      <div style="margin-top: 16px;">
+        <button class="btn-main" id="toggleSleepBtn" onclick="handleSleepButton()">
+          <span id="toggleSleepText">Jetzt Schlafen legen</span>
+        </button>
+        <div class="btn-row">
+          <button class="btn-sec" onclick="openManualModal('wake')">☀️ Aufwachzeit korrigieren</button>
+          <button class="btn-sec" onclick="openManualModal('nap')">➕ Nap nachtragen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Dynamischer Tagesplan</span>
+        <span id="bedtimeHint" style="color: #a855f7;">Ziel: 19:30</span>
+      </div>
+      <div class="timeline" id="scheduleTimeline"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>Gelernte Wachfenster (EWMA α=0.25)</span></div>
+      <div class="stat-grid" id="learnedWindowsGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: PROTOKOLL & ANALYSE -->
+  <div id="tab-log" class="tab-view">
+    <div class="card">
+      <div class="card-header">
+        <span>Heutige Ereignisse</span>
+        <button class="btn-sec" style="padding: 4px 10px; font-size: 0.75rem;" onclick="resetDay()">Tag zurücksetzen</button>
+      </div>
+      <div class="timeline" id="logList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>Algorithmus-Status & Korrekturen</span></div>
+      <div id="algoInsights" style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: PROFIL & PARAMETER -->
+  <div id="tab-settings" class="tab-view">
+    <div class="card">
+      <div class="card-header"><span>Kind & Basis-Einstellungen</span></div>
+      <div class="form-group">
+        <label>Name des Kindes</label>
+        <input type="text" id="cfgName" class="form-control" value="Malia">
+      </div>
+      <div class="form-group">
+        <label>Geburtsdatum</label>
+        <input type="date" id="cfgDob" class="form-control" value="2025-11-15">
+      </div>
+      <div class="form-group">
+        <label>Anzahl der Nickerchen (Modus)</label>
+        <select id="cfgNapMode" class="form-control">
+          <option value="auto">Automatisch nach Alter + Historie</option>
+          <option value="3">3 Schläfchen</option>
+          <option value="2" selected>2 Schläfchen</option>
+          <option value="1">1 Schläfchen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Lernrate EWMA (α = 0.10 träge bis 0.40 schnell)</label>
+        <input type="number" step="0.05" min="0.1" max="0.5" id="cfgAlpha" class="form-control" value="0.25">
+      </div>
+      <div class="form-group">
+        <label>Schlafschuld-Faktor (β bei kurzem Nap)</label>
+        <input type="number" step="0.05" min="0.1" max="0.6" id="cfgBeta" class="form-control" value="0.30">
+      </div>
+      <button class="btn-main" onclick="saveSettings()">Einstellungen speichern</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL FÜR EINSCHLAF-FEEDBACK (SLEEP LATENCY) -->
+<div class="modal" id="latencyModal">
+  <div class="modal-content">
+    <div class="card-header"><span>Einschlaf-Feedback (Latenz)</span></div>
+    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 10px;">
+      Wie schnell ist dein Kind eingeschlafen? Der Algorithmus passt das nächste Wachfenster daran an.
+    </p>
+    <div class="pill-select">
+      <div class="pill" onclick="selectLatency('overtired', this)">⚡ &lt; 5 Min / Weinen<br><small>(Übermüdet)</small></div>
+      <div class="pill selected" onclick="selectLatency('ideal', this)">✨ 5–15 Min<br><small>(Optimal)</small></div>
+      <div class="pill" onclick="selectLatency('undertired', this)">🐢 &gt; 20 Min ruhig<br><small>(Wenig Druck)</small></div>
+    </div>
+    <button class="btn-main" style="margin-top: 12px;" onclick="confirmWakeUp()">Aufwachen speichern</button>
+  </div>
+</div>
+
+<!-- MODAL FÜR MANUELLE ZEITEINGABE -->
+<div class="modal" id="manualModal">
+  <div class="modal-content">
+    <div class="card-header"><span id="manualModalTitle">Zeit eintragen</span></div>
+    <div class="form-group">
+      <label id="manualStartLbl">Startzeit (HH:MM)</label>
+      <input type="time" id="manualStartTime" class="form-control" value="07:00">
+    </div>
+    <div class="form-group" id="manualEndGroup">
+      <label>Aufwachzeit (HH:MM)</label>
+      <input type="time" id="manualEndTime" class="form-control" value="08:15">
+    </div>
+    <div class="btn-row">
+      <button class="btn-sec" onclick="closeManualModal()">Abbrechen</button>
+      <button class="btn-main" style="padding: 11px;" onclick="saveManualEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button class="nav-btn active" onclick="switchTab('plan', this)">📅<span>Tagesplan</span></button>
+  <button class="nav-btn" onclick="switchTab('log', this)">📊<span>Protokoll</span></button>
+  <button class="nav-btn" onclick="switchTab('settings', this)">⚙️<span>Parameter</span></button>
+</nav>
+
+<script>
+  // --- 1. BASELINE ALTERS-TABELLE (Borbély + Pädiatrische Referenzwerte) ---
+  const AGE_BASELINES = [
+    { maxMonths: 4,  naps: 4, windows: [90, 105, 110, 115, 120], targetNapDur: 60, bedtimeRange: [18*60+30, 20*60] },
+    { maxMonths: 6,  naps: 3, windows: [120, 135, 150, 165],     targetNapDur: 70, bedtimeRange: [18*60+30, 20*60] },
+    { maxMonths: 9,  naps: 3, windows: [150, 180, 195, 210],     targetNapDur: 75, bedtimeRange: [18*60+30, 20*60] },
+    { maxMonths: 14, naps: 2, windows: [195, 220, 245],          targetNapDur: 80, bedtimeRange: [18*60+45, 20*60+15] },
+    { maxMonths: 36, naps: 1, windows: [310, 340],               targetNapDur: 110, bedtimeRange: [19*60, 20*60+30] }
+  ];
+
+  // --- 2. APP STATE & PERSISTENZ ---
+  let state = {
+    name: "Malia",
+    dob: "2025-11-15",
+    napMode: "2",
+    alpha: 0.25,
+    beta: 0.30,
+    learnedWindows: null, // [W1, W2, W3]
+    morningWake: 7 * 60,  // 07:00 in Minuten seit Mitternacht
+    isSleeping: false,
+    sleepStart: null,
+    selectedLatency: "ideal",
+    napsToday: [] // [{ start: min, end: min, latency: 'ideal', actualWindow: min }]
+  };
+
+  let manualModeType = 'wake';
+
+  function loadState() {
+    const saved = localStorage.getItem("schlafplaner_state_v1");
+    if (saved) {
+      try { state = { ...state, ...JSON.parse(saved) }; } catch (e) {}
+    }
+    initLearnedWindows();
+    syncSettingsUI();
+    renderAll();
+  }
+
+  function saveState() {
+    localStorage.setItem("schlafplaner_state_v1", JSON.stringify(state));
+  }
+
+  function getAgeInMonths() {
+    const dobDate = new Date(state.dob);
+    const now = new Date();
+    const diff = (now.getFullYear() - dobDate.getFullYear()) * 12 + (now.getMonth() - dobDate.getMonth());
+    return Math.max(1, diff);
+  }
+
+  function getBaseline() {
+    const months = getAgeInMonths();
+    let base = AGE_BASELINES.find(b => months <= b.maxMonths) || AGE_BASELINES[AGE_BASELINES.length - 1];
+    if (state.napMode !== "auto") {
+      const forcedNaps = parseInt(state.napMode, 10);
+      const match = AGE_BASELINES.find(b => b.naps === forcedNaps);
+      if (match) base = match;
+    }
+    return base;
+  }
+
+  function initLearnedWindows() {
+    const base = getBaseline();
+    if (!state.learnedWindows || state.learnedWindows.length !== base.windows.length) {
+      state.learnedWindows = [...base.windows];
+    }
+  }
+
+  // --- 3. KERN-ALGORITHMUS (EWMA, SLEEP-DEBT, MICRO-NAP & WAKE-CAP) ---
+  function computeDaySchedule() {
+    const base = getBaseline();
+    const windows = [...state.learnedWindows];
+    const items = [];
+    let insights = [];
+
+    let cursor = state.morningWake;
+    items.push({
+      type: "wake",
+      time: cursor,
+      title: "Morgendliches Aufwachen",
+      meta: "Start von Prozess S (Homöostatischer Aufbau)",
+      done: true
+    });
+
+    const totalRegularNaps = base.naps;
+
+    for (let i = 0; i < totalRegularNaps; i++) {
+      let baseW = windows[i] || windows[windows.length - 1];
+      let debtAdjustment = 0;
+
+      // Prüfen, ob das vorherige Schläfchen zu kurz war (Sleep Debt Faktor Beta)
+      if (i > 0 && state.napsToday[i - 1]) {
+        const prevNap = state.napsToday[i - 1];
+        const prevDur = prevNap.end - prevNap.start;
+        if (prevDur < base.targetNapDur) {
+          debtAdjustment = Math.round(state.beta * (base.targetNapDur - prevDur));
+          insights.push(`Nap ${i} war kurz (${prevDur}m statt ${base.targetNapDur}m) → Wachfenster ${i+1} um -${debtAdjustment} Min. verkürzt.`);
+        }
+      }
+
+      const effectiveW = Math.max(60, baseW - debtAdjustment);
+
+      if (state.napsToday[i]) {
+        // Bereits absolviertes Schläfchen
+        const nap = state.napsToday[i];
+        const dur = nap.end - nap.start;
+        items.push({
+          type: "nap",
+          start: nap.start,
+          end: nap.end,
+          title: `${i + 1}. Schläfchen (${dur} Min.)`,
+          meta: `Wachfenster davor: ${nap.actualWindow} Min. • Einschlafen: ${nap.latency}`,
+          done: true
+        });
+        cursor = nap.end;
+      } else {
+        // Geplantes zukünftiges Schläfchen
+        const plannedStart = cursor + effectiveW;
+        let plannedEnd = plannedStart + base.targetNapDur;
+
+        // Wake-up Cap für das letzte Schläfchen zum Schutz der Bettgehzeit
+        const lastWindow = windows[windows.length - 1];
+        const maxBedtime = base.bedtimeRange[1];
+        const latestAllowedWake = maxBedtime - lastWindow;
+
+        let capWarning = "";
+        if (i === totalRegularNaps - 1 && plannedEnd > latestAllowedWake) {
+          plannedEnd = Math.max(plannedStart + 30, latestAllowedWake);
+          capWarning = ` • ⚠️ Wecken um ${formatMin(plannedEnd)} für Nachtschlaf!`;
+          insights.push(`Wake-up Cap aktiv: Letztes Schläfchen auf ${formatMin(plannedEnd)} begrenzt, damit Bettgehzeit nicht nach ${formatMin(maxBedtime)} fällt.`);
+        }
+
+        items.push({
+          type: "nap",
+          start: plannedStart,
+          end: plannedEnd,
+          title: `${i + 1}. Schläfchen (SweetSpot)`,
+          meta: `Optimales Wachfenster: ${effectiveW} Min.${capWarning}`,
+          done: false,
+          warn: capWarning !== ""
+        });
+        cursor = plannedEnd;
+      }
+    }
+
+    // Letztes Wachfenster vor dem Nachtschlaf
+    let finalW = windows[windows.length - 1];
+    const lastCompletedNap = state.napsToday[totalRegularNaps - 1];
+    if (lastCompletedNap) {
+      const lastDur = lastCompletedNap.end - lastCompletedNap.start;
+      if (lastDur < base.targetNapDur) {
+        const debt = Math.round(state.beta * (base.targetNapDur - lastDur));
+        finalW = Math.max(120, finalW - debt);
+      }
+    }
+
+    let bedtime = cursor + finalW;
+
+    // Brückenschlaf (Micro-Nap) Prüfung, falls Bettgehzeit vor 18:00 Uhr (1080 Min.) fällt
+    if (bedtime < 18 * 60) {
+      const microStart = cursor + Math.round(finalW * 0.65);
+      const microEnd = microStart + 15;
+      bedtime = microEnd + Math.round(finalW * 0.60);
+      items.push({
+        type: "nap",
+        start: microStart,
+        end: microEnd,
+        title: `⚡ Brücken-Powernap (15 Min.)`,
+        meta: `Verhindert zu frühe Bettgehzeit vor 18:00 Uhr`,
+        done: false,
+        warn: true
+      });
+      insights.push(`Brücken-Nap eingeschoben, da reguläres Ende zu einer Bettgehzeit vor 18:00 Uhr geführt hätte.`);
+    }
+
+    items.push({
+      type: "bed",
+      time: bedtime,
+      title: "🌙 Ideale Bettgehzeit (Nachtschlaf)",
+      meta: `Letztes Wachfenster: ${finalW} Min. • Zirkadianes Melatonin-Fenster`,
+      done: false
+    });
+
+    return { items, bedtime, insights };
+  }
+
+  // --- 4. EWMA TRAINING BEIM EINSCHLAFEN & AUFWACHEN ---
+  function updateEWMAWindow(napIndex, actualWakeWindow, latencyFeedback) {
+    const base = getBaseline();
+    if (napIndex >= state.learnedWindows.length) return;
+
+    const currentLearned = state.learnedWindows[napIndex];
+    const baseRef = base.windows[napIndex];
+
+    // Clamping: Ausreißer über +/- 35% vom Alterswert sanft begrenzen
+    const minClamp = Math.round(baseRef * 0.65);
+    const maxClamp = Math.round(baseRef * 1.35);
+    let clampedActual = Math.min(maxClamp, Math.max(minClamp, actualWakeWindow));
+
+    // Feedback-Korrektur über die Einschlaf-Latenz
+    let latencyDelta = 0;
+    if (latencyFeedback === "undertired") latencyDelta = 10; // Kind brauchte >20m -> Wachfenster verlängern
+    if (latencyFeedback === "overtired")  latencyDelta = -10; // Kind war übermüdet -> Wachfenster verkürzen
+
+    const targetObservation = clampedActual + latencyDelta;
+
+    // EWMA Formel: W_neu = alpha * W_beobachtet + (1 - alpha) * W_historisch
+    const updated = Math.round(state.alpha * targetObservation + (1 - state.alpha) * currentLearned);
+    state.learnedWindows[napIndex] = updated;
+  }
+
+  // --- 5. UI INTERAKTION & RENDERING ---
+  function formatMin(m) {
+    const normalized = ((m % 1440) + 1440) % 1440;
+    const hh = String(Math.floor(normalized / 60)).padStart(2, "0");
+    const mm = String(normalized % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function getNowMinutes() {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  function handleSleepButton() {
+    const nowMin = getNowMinutes();
+    if (!state.isSleeping) {
+      state.isSleeping = true;
+      state.sleepStart = nowMin;
+      saveState();
+      renderAll();
+    } else {
+      document.getElementById("latencyModal").classList.add("open");
+    }
+  }
+
+  function selectLatency(type, el) {
+    state.selectedLatency = type;
+    document.querySelectorAll("#latencyModal .pill").forEach(p => p.classList.remove("selected"));
+    el.classList.add("selected");
+  }
+
+  function confirmWakeUp() {
+    document.getElementById("latencyModal").classList.remove("open");
+    const nowMin = getNowMinutes();
+    let start = state.sleepStart;
+    let end = nowMin;
+    if (end <= start) end = start + 45; // Fallback falls direkt geklickt
+
+    const napIdx = state.napsToday.length;
+    const prevWake = napIdx === 0 ? state.morningWake : state.napsToday[napIdx - 1].end;
+    const actualWindow = Math.max(30, start - prevWake);
+
+    state.napsToday.push({
+      start,
+      end,
+      latency: state.selectedLatency,
+      actualWindow
+    });
+
+    updateEWMAWindow(napIdx, actualWindow, state.selectedLatency);
+
+    state.isSleeping = false;
+    state.sleepStart = null;
+    saveState();
+    renderAll();
+  }
+
+  function openManualModal(type) {
+    manualModeType = type;
+    const modal = document.getElementById("manualModal");
+    const endGroup = document.getElementById("manualEndGroup");
+    if (type === "wake") {
+      document.getElementById("manualModalTitle").innerText = "Morgendliches Aufwachen";
+      document.getElementById("manualStartLbl").innerText = "Aufwachzeit (HH:MM)";
+      document.getElementById("manualStartTime").value = formatMin(state.morningWake);
+      endGroup.style.display = "none";
+    } else {
+      document.getElementById("manualModalTitle").innerText = "Nickerchen eintragen";
+      document.getElementById("manualStartLbl").innerText = "Einschlafzeit (HH:MM)";
+      document.getElementById("manualStartTime").value = "10:00";
+      document.getElementById("manualEndTime").value = "11:15";
+      endGroup.style.display = "block";
+    }
+    modal.classList.add("open");
+  }
+
+  function closeManualModal() {
+    document.getElementById("manualModal").classList.remove("open");
+  }
+
+  function saveManualEntry() {
+    const startParts = document.getElementById("manualStartTime").value.split(":");
+    const startMin = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+
+    if (manualModeType === "wake") {
+      state.morningWake = startMin;
+    } else {
+      const endParts = document.getElementById("manualEndTime").value.split(":");
+      const endMin = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+      if (endMin > startMin) {
+        const napIdx = state.napsToday.length;
+        const prevWake = napIdx === 0 ? state.morningWake : state.napsToday[napIdx - 1].end;
+        const actualWindow = Math.max(30, startMin - prevWake);
+        state.napsToday.push({
+          start: startMin,
+          end: endMin,
+          latency: "ideal",
+          actualWindow
+        });
+        updateEWMAWindow(napIdx, actualWindow, "ideal");
+      }
+    }
+    closeManualModal();
+    saveState();
+    renderAll();
+  }
+
+  function resetDay() {
+    state.napsToday = [];
+    state.isSleeping = false;
+    state.sleepStart = null;
+    saveState();
+    renderAll();
+  }
+
+  function saveSettings() {
+    state.name = document.getElementById("cfgName").value.trim() || "Malia";
+    state.dob = document.getElementById("cfgDob").value;
+    state.napMode = document.getElementById("cfgNapMode").value;
+    state.alpha = parseFloat(document.getElementById("cfgAlpha").value) || 0.25;
+    state.beta = parseFloat(document.getElementById("cfgBeta").value) || 0.30;
+    initLearnedWindows();
+    saveState();
+    renderAll();
+    alert("Parameter gespeichert & Plan neu berechnet!");
+  }
+
+  function syncSettingsUI() {
+    document.getElementById("cfgName").value = state.name;
+    document.getElementById("cfgDob").value = state.dob;
+    document.getElementById("cfgNapMode").value = state.napMode;
+    document.getElementById("cfgAlpha").value = state.alpha;
+    document.getElementById("cfgBeta").value = state.beta;
+  }
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll(".tab-view").forEach(v => v.classList.remove("active"));
+    document.getElementById("tab-" + tabId).classList.add("active");
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  function renderAll() {
+    const months = getAgeInMonths();
+    const base = getBaseline();
+    document.getElementById("childNameHeader").innerText = state.name;
+    document.getElementById("ageBadge").innerText = `${months} Mon. • ${base.naps} Naps`;
+
+    const { items, bedtime, insights } = computeDaySchedule();
+    document.getElementById("bedtimeHint").innerText = `Abendschlaf: ${formatMin(bedtime)}`;
+
+    // Nächsten anstehenden SweetSpot finden
+    const nextTarget = items.find(it => !it.done && (it.type === "nap" || it.type === "bed"));
+    const nowMin = getNowMinutes();
+
+    const btn = document.getElementById("toggleSleepBtn");
+    const btnTxt = document.getElementById("toggleSleepText");
+    const stateLbl = document.getElementById("currentStateLabel");
+
+    if (state.isSleeping) {
+      const sleptDur = Math.max(0, nowMin - state.sleepStart);
+      document.getElementById("sweetspotClock").innerText = `${sleptDur} Min.`;
+      document.getElementById("sweetspotCountdown").innerText = `Schläft seit ${formatMin(state.sleepStart)} Uhr`;
+      stateLbl.innerText = "💤 Schläft";
+      btn.classList.add("sleeping");
+      btnTxt.innerText = "☀️ Kind ist aufgewacht";
+      const pct = Math.max(10, 100 - Math.round((sleptDur / base.targetNapDur) * 90));
+      document.getElementById("pressureBar").style.width = `${pct}%`;
+      document.getElementById("pressurePercent").innerText = `${pct}% (Abbau)`;
+    } else if (nextTarget) {
+      const targetTime = nextTarget.type === "nap" ? nextTarget.start : nextTarget.time;
+      document.getElementById("sweetspotClock").innerText = formatMin(targetTime);
+      const diff = targetTime - nowMin;
+      if (diff > 0) {
+        document.getElementById("sweetspotCountdown").innerText = `in ${diff} Minuten (${nextTarget.title})`;
+      } else {
+        document.getElementById("sweetspotCountdown").innerText = `Seit ${Math.abs(diff)} Min. im Schlaffenster!`;
+      }
+      stateLbl.innerText = "☀️ Wach";
+      btn.classList.remove("sleeping");
+      btnTxt.innerText = "🌙 Jetzt Schlafen legen";
+
+      const lastWake = state.napsToday.length === 0 ? state.morningWake : state.napsToday[state.napsToday.length - 1].end;
+      const totalWindow = Math.max(60, targetTime - lastWake);
+      const elapsed = Math.max(0, nowMin - lastWake);
+      const pct = Math.min(100, Math.round((elapsed / totalWindow) * 100));
+      document.getElementById("pressureBar").style.width = `${pct}%`;
+      document.getElementById("pressurePercent").innerText = `${pct}%`;
+    }
+
+    // Timeline rendern
+    const tlContainer = document.getElementById("scheduleTimeline");
+    tlContainer.innerHTML = items.map(it => {
+      const timeStr = it.type === "nap" ? `${formatMin(it.start)} – ${formatMin(it.end)}` : formatMin(it.time);
+      const cls = it.done ? "done" : (it.type === "bed" ? "bed" : (it.warn ? "warn" : ""));
+      return `
+        <div class="tl-item ${cls}">
+          <div class="tl-time">${timeStr}</div>
+          <div class="tl-desc">
+            <div>${it.title}</div>
+            <div class="tl-meta">${it.meta}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // Gelernte Wachfenster Grid rendern
+    const grid = document.getElementById("learnedWindowsGrid");
+    grid.innerHTML = state.learnedWindows.map((w, idx) => {
+      const lbl = idx === state.learnedWindows.length - 1 ? "Vor Nacht" : `Vor ${idx + 1}. Nap`;
+      return `
+        <div class="stat-box">
+          <div class="stat-val">${w} Min</div>
+          <div class="stat-lbl">${lbl}</div>
+        </div>
+      `;
+    }).join("");
+
+    // Protokoll Tab rendern
+    const logList = document.getElementById("logList");
+    if (state.napsToday.length === 0) {
+      logList.innerHTML = `<div style="color: var(--muted); font-size: 0.85rem;">Heute noch keine Schläfchen abgeschlossen. Morgens wach seit ${formatMin(state.morningWake)} Uhr.</div>`;
+    } else {
+      logList.innerHTML = state.napsToday.map((n, i) => `
+        <div class="tl-item done">
+          <div class="tl-time">${formatMin(n.start)} – ${formatMin(n.end)}</div>
+          <div class="tl-desc">
+            <div>${i + 1}. Schläfchen (${n.end - n.start} Min.)</div>
+            <div class="tl-meta">Wachfenster davor: ${n.actualWindow} Min. • Feedback: ${n.latency}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    const insightsBox = document.getElementById("algoInsights");
+    insightsBox.innerHTML = insights.length > 0
+      ? insights.map(txt => `• ${txt}`).join("<br>")
+      : "Alle Schläfchen im Normbereich. Keine Notfall-Korrekturen (Sleep-Debt / Wake-up Cap) erforderlich.";
+  }
+
+  window.addEventListener("DOMContentLoaded", loadState);
+</script>
+</body>
+</html>
